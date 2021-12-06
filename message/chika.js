@@ -26,7 +26,7 @@ module.exports = async(chika, msg, m, ind, setting) => {
 	const from = msg.key.remoteJid
 	const type = Object.keys(msg.message)[0]
         const content = JSON.stringify(msg.message)
-        const chats = (type === 'conversation' && msg.message.conversation) ? msg.message.conversation : (type == 'imageMessage') && msg.message.imageMessage.caption ? msg.message.imageMessage.caption : (type == 'documentMessage') && msg.message.documentMessage.caption ? msg.message.documentMessage.caption : (type == 'videoMessage') && msg.message.videoMessage.caption ? msg.message.videoMessage.caption : (type == 'extendedTextMessage') && msg.message.extendedTextMessage.text ? msg.message.extendedTextMessage.text : (type == 'buttonsResponseMessage' && msg.message.buttonsResponseMessage.selectedButtonId) ? msg.message.buttonsResponseMessage.selectedButtonId : (type == 'templateButtonReplyMessage') && msg.message.templateButtonReplyMessage.selectedId ? msg.message.templateButtonReplyMessage.selectedId : ""
+        const chats = (type === 'conversation' && msg.message.conversation) ? msg.message.conversation : (type == 'imageMessage') && msg.message.imageMessage.caption ? msg.message.imageMessage.caption : (type == 'documentMessage') && msg.message.documentMessage.caption ? msg.message.documentMessage.caption : (type == 'videoMessage') && msg.message.videoMessage.caption ? msg.message.videoMessage.caption : (type == 'extendedTextMessage') && msg.message.extendedTextMessage.text ? msg.message.extendedTextMessage.text : (type == 'buttonsResponseMessage' && msg.message.buttonsResponseMessage.selectedButtonId) ? msg.message.buttonsResponseMessage.selectedButtonId : ''
         if (chika.multi){
 		    var prefix = /^[°•π÷×¶∆£¢€¥®™✓=|!?#%^&.,\/\\©^]/.test(chats) ? chats.match(/^[°•π÷×¶∆£¢€¥®™✓=|!?#%^&.,\/\\©^]/gi) : '#'
         } else {
@@ -98,7 +98,7 @@ module.exports = async(chika, msg, m, ind, setting) => {
             let res = await axios.head(url)
             mime = res.headers['content-type']
             if (mime.split("/")[1] === "gif") {
-                return chika.sendMessage(from, { video: await convertGif(url), caption: caption, gifPlayback: true, mentions: men ? men : []}, {quoted: msg})
+                return chika.sendMessage(from, { video: await getBuffer(url), caption: caption, gifPlayback: true, mentions: men ? men : []}, {quoted: msg})
                 }
             let type = mime.split("/")[0]+"Message"
             if(mime.split("/")[0] === "image"){
@@ -111,24 +111,27 @@ module.exports = async(chika, msg, m, ind, setting) => {
                 return chika.sendMessage(from, { document: await getBuffer(url), mimetype: mime, caption: caption, mentions: men ? men : []}, {quoted: msg })
             }
         }
-        
-        //Please dont edit for urlbutton 
-        const buttonsDefault = [
-            { callButton: {displayText: `☎ ️Call Owner`, phoneNumber: `+628127668234`} },
-            { urlButton: { displayText: `💠 Script Bot`, url : `https://github.com/rashidsiregar28/chikabot`} },
-            { quickReplyButton: { displayText: `🧑 Owner`, id: `${prefix}owner` } },
-            { quickReplyButton: { displayText: `🎛️ Rules`, id: `${prefix}rules` } }
-        ]
 
-        const textTemplateButtons = (from, text, footer, buttons) => {
-            return chika.sendMessage(from, { text: text, footer: footer, templateButtons: buttons })
+        const sendButton = (type, from, text, buttons, men, quoted, options) => { 
+            if (type == 'image') {
+                chika.sendMessage(from, { caption: text, image: options ? options : fs.readFileSync(setting.pathImg), buttons: buttons, headerType: 'IMAGE', mentions: men }, {quoted: quoted})
+            } else if (type == 'video') {
+                if (options === undefined || options === null) return reply('illegal method, chat owner bot')
+                chika.sendMessage(from, { caption: text, video: options, buttons: buttons, headerType: 'VIDEO', mentions: men }, {quoted: quoted})
+            } else if (type == 'location') {
+                chika.sendMessage(from, { caption: text, location: { jpegThumbnail: options ? options : fs.readFileSync(setting.pathImg) }, buttons: buttons, headerType: 'LOCATION', mentions: men })
+            } else if (type == 'text') {
+                chika.sendMessage(from, { text: text, buttons: buttons, headerType: 'TEXT', mentions: men }, {quoted: quoted})
+            } else {
+                reply('invalid type, please contact the owner bot')
+            }
         }
 
         chika.sendReadReceipt(from, sender, [msg.key.id])
 
 
         if (isCmd && !isGroup) {
-			console.log(color('[CMD]'), color(moment(msg.messageTimestamp * 1000).format('DD/MM/YYYY HH:mm:ss'), 'yellow'), color(`${command} [${args.length}]`), 'from', color(pushname))
+                       	console.log(color('[CMD]'), color(moment(msg.messageTimestamp * 1000).format('DD/MM/YYYY HH:mm:ss'), 'yellow'), color(`${command} [${args.length}]`), 'from', color(pushname))
         }
         if (isCmd && isGroup) {
 			console.log(color('[CMD]'), color(moment(msg.messageTimestamp * 1000).format('DD/MM/YYYY HH:mm:ss'), 'yellow'), color(`${command} [${args.length}]`), 'from', color(pushname), 'in', color(groupName))
@@ -158,6 +161,9 @@ module.exports = async(chika, msg, m, ind, setting) => {
             case prefix+'rule': case prefix+'rules':
                 textImg(ind.rules(prefix))
             break
+            case prefix+'sc': case prefix+'source': case prefix+'sourcecode':
+                textImg(ind.source(prefix))
+            break
             case prefix+'tos': case prefix+'donate': case prefix+'donasi':
                 textImg(ind.tos(ownerNumber[0].split('@')[0], prefix))
             break
@@ -167,7 +173,16 @@ module.exports = async(chika, msg, m, ind, setting) => {
                 }
             break
             case prefix+'menu': case prefix+'help':{
-                textTemplateButtons(from, `Hai kak ${pushname} 👋, saya *${botName}*\n\nBot ini adalah Beta *Multi-Device* Whatsapp.`, `Jika kamu menemukan semacam bug atau kesalahan mohon dimaklumi dulu ya 😖, Lapor Owner Jika Perlu atau Mendesak 🙏`, buttonsDefault)
+                // I try buttonMessage in personal chats, not responding :(
+                if (isGroup) {
+                    let buttons = [
+                        {buttonId: `${prefix}owner`, buttonText: {displayText: '👨‍💻 Owner Bot'}, type: 1},
+                        {buttonId: `${prefix}rule`, buttonText: {displayText: '🎛️ Rules Bot' }, type: 1}
+                    ]
+                    sendButton('location', from, `Hai kak ${pushname} 👋, saya *${botName}*\n\nBot ini adalah Beta *Multi-Device* Whatsapp. Jika kamu menemukan semacam bug atau kesalahan mohon dimaklumi dulu ya 😖, Lapor Owner Jika Perlu atau Mendesak 🙏 ` + '\n\n' + ind.listMenu(time, salam, pushname, prefix), buttons)
+               } else {
+                   textImg(`Hai kak ${pushname} 👋, saya *${botName}*\n\nBot ini adalah Beta *Multi-Device* Whatsapp. \nJika kamu menemukan semacam bug atau kesalahan mohon dimaklumi dulu ya 😖, Lapor Owner Jika Perlu atau Mendesak 🙏\n\nKetik *${prefix}allmenu* untuk melihat list fitur bot`)
+                }
             }
             break
             case prefix+'allmenu': {
@@ -244,6 +259,28 @@ module.exports = async(chika, msg, m, ind, setting) => {
                 chika.sendMessage(from, { text : q ? q : '' , mentions: groupMembers.map(a => a.id)})
             break
             //Weebs
+            case prefix+'waifu': case prefix+'shinobu': case prefix+'megumin': case prefix+'bully': case prefix+'cuddle': case prefix+'cry': case prefix+'hug': case prefix+'awoo': case prefix+'kiss': case prefix+'lick': case prefix+'pat': case prefix+'smug': case prefix+'bonk': case prefix+'yeet': case prefix+'blush': case prefix+'smile': case prefix+'wave': case prefix+'highfive': case prefix+'handhold': case prefix+'nom': case prefix+'bite': case prefix+'glomp': case prefix+'slap': case prefix+'kill': case prefix+'happy': case prefix+'wink': case prefix+'poke': case prefix+'dance': case prefix+'cringe': 
+              await textImg(ind.wait())
+              let waifu = await fetchJson(`https://api.waifu.pics/sfw/${command.split(prefix)[1]}`)
+                await sendFileFromUrl(from,waifu.url,ind.ok(),msg)
+                .catch((err) => {
+                    for (let x of ownerNumber) {
+                        sendMess(x, `${command.split(prefix)[1]} Error: \n\n` + err)
+                    }
+                    textImg(ind.err())
+                })
+		break
+            case prefix+'loli': case prefix+'neko': 
+              await textImg(ind.wait())
+              let loli = await fetchJson(`https://api.waifu.pics/sfw/neko`)
+              await sendFileFromUrl(from,loli.url,ind.ok(),msg)
+                .catch((err) => {
+                    for (let x of ownerNumber) {
+                        sendMess(x, `${command.split(prefix)[1]} Error: \n\n` + err)
+                    }
+                    textImg(ind.err())
+                })
+		break
             case prefix+'anime':
                 if (!q) return textImg(ind.wrongFormat(prefix))
                 await textImg(ind.wait())
