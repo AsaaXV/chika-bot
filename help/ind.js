@@ -132,10 +132,50 @@ exports.listMenu = (time, salam, pushname, prefix) => {
 │• ${prefix}instagram link
 ╰───────────
 
-╭─❏ THANKS
+╭─❏ •❗「 ANIME RONDOM 」
+│• ${prefix}loli
+│• ${prefix}neko
+│• ${prefix}waifu
+│• ${prefix}shinobu
+│• ${prefix}megumin
+│• ${prefix}bully
+│• ${prefix}cuddle
+│• ${prefix}cry
+│• ${prefix}hug
+│• ${prefix}awoo
+│• ${prefix}kiss
+│• ${prefix}lick
+│• ${prefix}pat
+│• ${prefix}smug
+│• ${prefix}bonk
+│• ${prefix}yeet
+│• ${prefix}blush
+│• ${prefix}smile
+│• ${prefix}wave
+│• ${prefix}highfive
+│• ${prefix}handhold
+│• ${prefix}nom
+│• ${prefix}bite
+│• ${prefix}glomp
+│• ${prefix}slap
+│• ${prefix}kill
+│• ${prefix}happy
+│• ${prefix}wink
+│• ${prefix}poke
+│• ${prefix}dance
+│• ${prefix}cringe
+╰───────────
+
+╭─❏ •❗「 THANKS 」
+│➤ Allah
+│➤ ShuiTao
+│➤ My parents
+│➤ Rashid
 │➤ Xfarr api
+│➤ Fatih A.
+│➤ ZeeoneOfc
 │➤ Baileys#multi-device
-│➤ and all support
+│➤ And all support
 ╰───────────
 
     `
@@ -177,7 +217,13 @@ Arigatou Gozaimasu! Untuk kalian user ramah dan Beberapa orang yg ikut membantu 
 
     `
 }
+exports.source = (prefix) =>{
+return`*── 「 SOURCE 」 ──*
 
+Original : https://github.com/rashidsiregar28/chikabot
+Sc Recode : https://github.com/zeeoneofc/Alphabot-Md
+`
+}
 exports.tos = (ownerNumber, prefix) => {
     return `
 *── 「 DONATE 」 ──*
